@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SORTEADOR DE RITUAIS SECRETO</title>
+<style>
+/* ===== Reset & Fonte ===== */
+* { margin:0; padding:0; box-sizing:border-box; font-family: 'Lucida Console', monospace; }
+html, body { height:100%; overflow-y:auto; background:#0a0a0a; color:white; }
+body { display:flex; justify-content:center; padding:20px; }
+/* ===== Canvas rain code ===== */
+canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.5; }
+/* ===== Container principal ===== */
+.container {
+    position:relative; z-index:1; width:90%; max-width:1000px;
+    margin:auto; display:flex; flex-direction:column; gap:25px;
+    text-align:justify;
+}
+/* ===== Botões ===== */
+button {
+    background:#111; color:#0f0; border:1px solid #0f0;
+    font-size:18px; cursor:pointer; padding:10px 25px; transition:0.3s;
+    border-radius:5px; box-shadow:0 0 10px #0f0;
+}
+button:hover { background:#0f0; color:#111; }
+/* ===== Labels & selects ===== */
+label { font-size:16px; margin-right:10px; }
+select { font-size:16px; margin-left:5px; background:#111; color:#0f0; border:1px solid #0f0; padding:3px; }
+/* ===== Títulos ===== */
+.title { font-size:28px; margin-bottom:15px; text-align:center; text-decoration:underline; color:#0f0; text-shadow:0 0 5px #0f0; }
+/* ===== Cards rituais ===== */
+.ritual-card {
+    padding:10px 15px; border-radius:6px; margin-bottom:8px;
+    font-weight:bold; font-size:20px; text-align:justify; position:relative;
+    box-shadow:0 0 15px rgba(0,0,0,0.6);
+    background:#111;
+}
+/* Cores por elemento */
+.CONHECIMENTO { background:linear-gradient(to right,#FFD700,#FFA500); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.ENERGIA { background:linear-gradient(to right,#FF00FF,#8000FF,#00FFFF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.SANGUE { color:#B20000; }
+.MORTE { background:white; color:black; padding:10px; }
+.MEDO { background:linear-gradient(to right,#EEEEEE,#CCCCCC); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+/* ===== Scroll do container ===== */
+.container { max-height:90vh; overflow-y:auto; padding-right:10px; }
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<div class="container" id="app"></div>
+
+<script>
+// ===== Rain code estilo terminal =====
+const canvas=document.getElementById('rain');
+const ctx=canvas.getContext('2d');
+let width=canvas.width=window.innerWidth;
+let height=canvas.height=window.innerHeight;
+let columns=Math.floor(width/14);
+let drops=Array(columns).fill(1);
+function drawRain(){
+    ctx.fillStyle='rgba(0,0,0,0.05)';
+    ctx.fillRect(0,0,width,height);
+    ctx.font='14px Lucida Console';
+    for(let i=0;i<drops.length;i++){
+        const t=String.fromCharCode(0x30A0+Math.random()*96);
+        ctx.fillStyle='rgba(0,255,0,0.4)';
+        ctx.fillText(t,i*14,drops[i]*20);
+        if(drops[i]*20>height && Math.random()>0.975) drops[i]=0;
+        drops[i]++;
+    }
+}
+setInterval(drawRain,40);
+
+// ===== Lista de rituais =====
+const listaRituais={
+SANGUE:{1:["Amaldiçoar Arma","Arma Atroz","Armadura de Sangue","Corpo Adaptado","Distorcer Aparência","Fortalecimento Sensorial","Ódio Incontrolável"],2:["Aprimorar Físico","Descarnar","Flagelo de Sangue","Hemofagia","Transfusão Vital"],3:["Ferver Sangue","Forma Monstruosa","Purgatório","Vomitar Pestes"],4:["Capturar o Coração","Invólucro de Carne","Vínculo de Sangue"]},
+CONHECIMENTO:{1:["Amaldiçoar Arma","Compreensão Paranormal","Enfeitiçar","Perturbação","Ouvir os Sussurros","Tecer Ilusão","Terceiro Olho"],2:["Aprimorar Mente","Detecção de Ameaças","Esconder dos Olhos","Invadir Mente","Localização"],3:["Alterar Memória","Contato Paranormal","Mergulho Mental","Vidência"],4:["Controle Mental","Inexistir","Possessão"]},
+ENERGIA:{1:["Amaldiçoar Arma","Amaldiçoar Tecnologia","Coincidência Forçada","Eletrocussão","Embaralhar","Luz","Polarização Caótica"],2:["Chamas do Caos","Contenção Fantasmagórica","Dissonância Acústica","Sopro do Caos","Tela de Ruído"],3:["Convocação Instantânea","Salto Fantasma","Transfigurar Água","Transfigurar Terra"],4:["Alterar Destino","Deflagração de Energia","Teletransporte"]},
+MORTE:{1:["Amaldiçoar Arma","Cicatrização","Consumir Manancial","Decadência","Definhar","Espirais da Perdição","Nuvem de Cinzas"],2:["Desacelerar Impacto","Eco Espiral","Paradoxo","Miasma Entrópico","Velocidade Mortal"],3:["Âncora Temporal","Poeira da Podridão","Tentáculos de Lodo","Zerar Entropia"],4:["Convocar o Algoz","Distorção Temporal","Fim Inevitável"]},
+MEDO:{1:["Cinerária"],2:["Proteção contra Rituais","Rejeitar Névoa"],3:["Dissipar Ritual"],4:["Canalizar o Medo","Conhecendo o Medo","Lâmina do Medo","Medo Tangível","Presença do Medo"]}
+};
+
+const app=document.getElementById('app');
+
+function start(){
+    app.innerHTML=`
+        <p class="title">COM PREGUIÇA DE ESCOLHER SEUS RITUAIS?</p>
+        <label>NEX: 
+        <select id="nex">${[...Array(19)].map((_,i)=>{
+            let val=(i+1)*5;
+            if(val===95) return `<option value="95">95</option><option value="99">99</option>`;
+            return `<option value="${val}">${val}</option>`;
+        }).join('')}</select></label>
+        <label>INTELECTO: 
+        <select id="intel">${[...Array(6)].map((_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>
+        <div style="margin-top:15px;">
+            <button onclick="sortAll()">SORTEAR TODOS RITUAIS</button>
+        </div>
+    `;
+}
+
+// ===== Funções de sorteio =====
+function getNivelNEX(nex){ return nex===99?20:Math.floor(nex/5); }
+function getCirculosPossiveis(nex){
+    if(nex<=20) return [1];
+    if(nex<=50) return [1,2];
+    if(nex<=80) return [1,2,3];
+    return [1,2,3,4];
+}
+function getMaxPorCirculo(nex,circulo){
+    const limites=[0,20,50,80,99];
+    if(circulo===1) return 99;
+    let percent=(nex-limites[circulo-1])/(limites[circulo]-limites[circulo-1]);
+    if(percent>1) percent=1;
+    return Math.max(1, Math.floor(percent*3));
+}
+
+function sortAll(){
+    const nex=parseInt(document.getElementById('nex').value);
+    const intel=parseInt(document.getElementById('intel').value);
+    const nivelNEX=getNivelNEX(nex);
+    const totalRituais=3+intel+nivelNEX;
+    const circulosPossiveis=getCirculosPossiveis(nex);
+    const contadorCirculo={1:0,2:0,3:0,4:0};
+    const rituaisUsados=new Set();
+
+    app.innerHTML=`<p class="title">RITUAIS SORTEADOS</p>`;
+    const voltarBtn=document.createElement('button');
+    voltarBtn.innerText='VOLTAR';
+    voltarBtn.onclick=start;
+    app.appendChild(voltarBtn);
+
+    (async()=>{
+        let sorteados=0;
+        while(sorteados<totalRituais){
+            let circulo=circulosPossiveis[Math.floor(Math.random()*circulosPossiveis.length)];
+            if(circulo>1 && circulosPossiveis.includes(circulo-1) && Math.random()<0.5) circulo-=1;
+            if(contadorCirculo[circulo]>=getMaxPorCirculo(nex,circulo)) circulo=1;
+            const elementos=Object.keys(listaRituais).filter(e=>!(circulo===4 && e==='MEDO') && listaRituais[e][circulo].length>0);
+            const elem=elementos[Math.floor(Math.random()*elementos.length)];
+            const ritualEscolhido=listaRituais[elem][circulo][Math.floor(Math.random()*listaRituais[elem][circulo].length)];
+            const key=`${elem}-${circulo}-${ritualEscolhido}`;
+            if(rituaisUsados.has(key)) continue;
+            rituaisUsados.add(key);
+            contadorCirculo[circulo]++;
+
+            const p=document.createElement('p');
+            p.className=`ritual-card ${elem}`;
+            app.appendChild(p);
+            await new Promise(res=>{
+                const interval=setInterval(()=>{
+                    p.innerText=ritualEscolhido.split('').sort(()=>Math.random()-0.5).join('');
+                },60);
+                setTimeout(()=>{clearInterval(interval); p.innerText=`${elem} - ${circulo}º: ${ritualEscolhido}`; res();},500+Math.random()*600);
+            });
+            sorteados++;
+        }
+    })();
+}
+
+start();
+</script>
+</body>
+</html>
